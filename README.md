@@ -12,7 +12,7 @@ Ce tableau de bord Streamlit permet d'explorer les relations entre vidéos YouTu
   Relie deux vidéos si elles partagent des commentateurs.
 
 * **Réseau par similarité sémantique**
-  Relie deux vidéos si leurs titres et descriptions sont proches d’un point de vue sémantique (modèle de langue).
+  *Relie deux vidéos si leurs titres et descriptions sont proches d’un point de vue sémantique (modèle de langue).
 
 * **Réseau par métriques numériques**
   Relie deux vidéos si leurs vues, likes et commentaires sont similaires selon une distance cosinus.
