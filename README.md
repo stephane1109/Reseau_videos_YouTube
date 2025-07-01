@@ -4,7 +4,7 @@
 
 ## Description
 
-Ce tableau de bord Streamlit permet d'explorer les relations entre vidéos YouTube touristiques à partir de plusieurs dimensions d'analyse. Il utilise l’API YouTube pour récupérer des données en temps réel, et construit des graphes ou des clusters selon les critères choisis.
+Ce tableau de bord Streamlit permet d'explorer les relations entre vidéos YouTube à partir de plusieurs dimensions d'analyse. Il utilise l’API YouTube pour récupérer des données en temps réel, et construit des graphes ou des clusters selon les critères choisis.
 
 ## Fonctionnalités
 
