@@ -21,12 +21,10 @@ import datetime
 from sklearn.metrics.pairwise import cosine_similarity
 from sklearn.preprocessing import MinMaxScaler
 import html
-import plotly.express as px
-from sklearn.decomposition import PCA
 from sklearn.cluster import KMeans
-
-# import umap
-# import plotly.express as px
+from sklearn.decomposition import PCA
+import plotly.express as px
+import plotly.graph_objects as go
 
 
 st.set_page_config(layout="wide", page_title="Analyse YouTube par vidéo")
@@ -45,7 +43,7 @@ Ce tableau de bord vous permet de construire différents types de réseaux entre
 - **Par clustering K-Means** : regroupe automatiquement les vidéos selon leur profil d'engagement (vues, likes, commentaires) numérique.
 
 Vous pouvez appliquer des **filtres de date**, **de vues**, **de likes** et **de commentaires**.
-Vous pouvez également télécharger les résultats sont enregistrés automatiquement sous forme de fichier Excel et visualiser un graphe interactif ou un nuage de points par cluster.
+Les résultats sont enregistrés automatiquement sous forme de fichier Excel et visualiser un graphe interactif ou un nuage de points par cluster.
 """)
 
 # Paramètres utilisateur
@@ -55,7 +53,7 @@ liste_mots = [mot.strip() for mot in mots_cles.split(",") if mot.strip()]
 nb_videos = st.sidebar.slider("Nombre total de vidéos à analyser", 10, 1000, 30)
 nb_commentaires = st.sidebar.slider("Commentaires max par vidéo", 10, 500, 100)
 seuil_co = st.sidebar.slider("Seuil de commentaires communs (poids min)", 1, 20, 2)
-seuil_sim = st.sidebar.slider("Seuil de similarité cosinus (0-1)", 0.0, 1.0, 0.8, step=0.05)
+seuil_sim = st.sidebar.slider("Seuil de similarité cosinus (0-1)", 0.0, 1.0, 0.7, step=0.05)
 
 filtrer_date = st.sidebar.checkbox("Filtrer par date de publication")
 if filtrer_date:
@@ -195,12 +193,7 @@ if run_social or run_similarity or run_metrics or run_kmeans:
                     G2.add_edge(video_ids[i], video_ids[j], weight=score)
 
     elif run_kmeans:
-        from sklearn.cluster import KMeans
-        from sklearn.decomposition import PCA
-        import plotly.express as px
-
         X = [[vues_d[v], likes_d[v], comments_d[v]] for v in video_ids]
-
         if not X:
             st.warning(
                 "Aucune donnée disponible pour effectuer l'analyse K-Means. Vérifiez les filtres ou les données récupérées.")
@@ -214,38 +207,53 @@ if run_social or run_similarity or run_metrics or run_kmeans:
             # K-Means clustering
             kmeans = KMeans(n_clusters=k, random_state=42).fit(X_scaled)
             labels = kmeans.labels_
+            centroids = kmeans.cluster_centers_
+
+            # Appliquer une seule réduction PCA
+            pca = PCA(n_components=2)
+            coords = pca.fit_transform(X_scaled)
+            centroids_2d = pca.transform(centroids)
 
             # Affectation des clusters au DataFrame
             df_videos["Cluster"] = [labels[video_ids.index(v)] for v in video_ids]
-
-            # Réduction de dimension pour visualisation
-            coords = PCA(n_components=2).fit_transform(X_scaled)
-
             df_proj = pd.DataFrame(coords, columns=["x", "y"])
             df_proj["Titre"] = [titres[v] for v in video_ids]
             df_proj["URL"] = [f"https://www.youtube.com/watch?v={v}" for v in video_ids]
             df_proj["Cluster"] = labels
 
-            # Affichage graphique
+            # Affichage graphique avec les centroïdes
             fig = px.scatter(
-                df_proj, x="x", y="y", color=df_proj["Cluster"].astype(str),
-                hover_data=["Titre", "URL"], title="Clustering K-Means des vidéos"
-            )
+            df_proj, x="x", y="y", color=df_proj["Cluster"].astype(str), hover_data=["Titre", "URL"], title="Clustering K-Means des vidéos")
             st.plotly_chart(fig, use_container_width=True)
 
-            # Construction d’un graphe si besoin
-            for i in range(len(video_ids)):
-                for j in range(i + 1, len(video_ids)):
-                    if labels[i] == labels[j]:
-                        G2.add_edge(video_ids[i], video_ids[j], weight=1.0)
+            # Ajout des points (vidéos)
+            for cluster_label in sorted(set(labels)):
+                cluster_data = df_proj[df_proj["Cluster"] == cluster_label]
+                fig.add_trace(go.Scatter(
+                    x=cluster_data["x"],
+                    y=cluster_data["y"],
+                    mode="markers",
+                    marker=dict(size=8),
+                    name=f"Cluster {cluster_label}",
+                    text=cluster_data["Titre"],
+                    hovertext=cluster_data["URL"],
+                    hoverinfo="text"
+                ))
+
+            # Mise en page
+            fig.update_layout(
+                title="Clustering K-Means des vidéos",
+                plot_bgcolor="black",
+                paper_bgcolor="black",
+                font_color="white"
+            )
+
+            st.plotly_chart(fig, use_container_width=True)
 
             # le bloc d'enregistrement
             fichier_excel_kmeans = "clustering_kmeans.xlsx"
             df_videos.to_excel(fichier_excel_kmeans, index=False)
             st.success(f"Fichier Excel enregistré sous : `{fichier_excel_kmeans}`")
-
-            with open(fichier_excel_kmeans, "rb") as f:
-                st.download_button("Télécharger les résultats (K-Means)", f, file_name=fichier_excel_kmeans)
 
             fichier_html_kmeans = "clustering_kmeans_graphique.html"
             fig.write_html(fichier_html_kmeans)
