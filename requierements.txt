@@ -1,0 +1,17 @@
+# www.codeandcortex.fr - version 1.0 - 01-07-2025
+# Stéphane Meurisse
+
+# Pour lancer l'application :
+# python -m streamlit run main.py
+
+streamlit
+pandas
+google-api-python-client
+XlsxWriter
+networkx
+pyvis
+scikit-learn
+numpy
+sentence-transformers
+umap-learn
+plotly
